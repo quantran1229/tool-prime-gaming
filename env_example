@@ -1,0 +1,6 @@
+SHEET_ID=sheet_id // (ex: can be found of URL)
+SHEET_INDEX=0 //  Sheet index 0,1,2
+GAME_LINK=https://gaming.amazon.com/genshin-impact-4/dp/amzn1.pg.item.08655560-ff3c-4922-86c3-26ea38480da1 // Game link
+CHROME_PATH=C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe // Chrome exec path
+FROM_USER=0 // Start from user 0=>n!
+IS_HEADLESS=true // Run in headless mode(not showing in browser) or not. Yes true No false
