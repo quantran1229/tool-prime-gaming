@@ -13,3 +13,15 @@ Start running
 ```
 npm start
 ```
+
+```
+=> Email abcxyz@email.com
+Signing in...
+Sign in success!
+Try to activate
+Not activate prime! Activating!
+Activated!
+Try to get game content!
+Your gift is collected! Here is the code abcdefgh
+DONE! Time: 22399 ms; Avg: 13.077179487179487 s/user. Total user 78
+```
