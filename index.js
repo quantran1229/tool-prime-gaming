@@ -27,11 +27,11 @@ const main = async () => {
       executablePath: process.env.CHROME_PATH,
     });
     const FROM_USER = process.env.FROM_USER || 0;
-    const context = browser.defaultBrowserContext();
+    const context = await browser.createIncognitoBrowserContext();
     await context.overridePermissions(process.env.GAME_LINK, [
       "clipboard-read",
     ]);
-    const page = await browser.newPage();
+    const page = await context.newPage();
     let totalUser = 0;
     const startTime = Date.now();
     let stopReadSheet = false;
