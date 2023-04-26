@@ -293,9 +293,7 @@ execLine = async (line) => {
             console.log(`FAIL DUE TO ${toastValue}`);
             break;
           } catch (err) {
-            resultCell.value = `${line._rawData[0]} | ${line._rawData[1]} | ${
-              line._rawData[2]
-            } | ${line._rawData[3]} | ${new Date().toString()}`;
+            resultCell.value = `${new Date().toString()}`;
             isSuccess = true;
             break;
           }
