@@ -178,10 +178,10 @@ execLine = async (line) => {
     "Line",
     line.rowIndex
   );
-  await initalBrowser();
   const resultCell = defaultSheet.getCell(line.rowIndex - 1, 5);
   let isSuccess = false;
   if (!resultCell.value) {
+    await initalBrowser();
     for (let i = 0; i < 2; i++) {
       try {
         await moveMouseRandomly()
