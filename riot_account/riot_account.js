@@ -305,7 +305,7 @@ execLine = async (line) => {
         break;
       }
     }
-    count = count == Cnf.no_account_per_proxy ? 0 : count + 1;
+    count = count >= Cnf.no_account_per_proxy ? 0 : count + 1;
   }
   try {
     if (!isSuccess && !resultCell.value) resultCell.value = `FAIL UNKNOW!`;
