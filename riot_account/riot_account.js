@@ -312,7 +312,7 @@ execLine = async (line) => {
   } catch (err) {}
   // Save to sheet
   await defaultSheet.saveUpdatedCells();
-  await browser.close();
+  if (browser) await browser.close();
 };
 
 done = async () => {
