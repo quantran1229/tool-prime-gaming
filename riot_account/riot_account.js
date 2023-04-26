@@ -305,7 +305,7 @@ execLine = async (line) => {
         break;
       }
     }
-    count = count >= Cnf.no_account_per_proxy ? 0 : count + 1;
+    count = count >= Cnf.no_account_per_proxy ? -1 : count + 1;
   }
   try {
     if (!isSuccess && !resultCell.value) resultCell.value = `FAIL UNKNOW!`;
@@ -332,7 +332,7 @@ run = async () => {
   if (data) {
     for (let line of data) {
       await execLine(line);
-      if (count == 0) {
+      if (count == -1) {
         if (Date.now() < timeout) {
           console.log(
             "WAITING FOR UPDATE PROXY IN:",
@@ -351,6 +351,7 @@ run = async () => {
           clearInterval(x);
         }
         timeout = await updateProxy();
+        count = 0
       }
     }
   }
