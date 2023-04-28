@@ -31,6 +31,9 @@ loadDoc = async () => {
 };
 
 checkKey = async () => {
+  if (!Cnf.use_proxy) {
+    return;
+  }
   console.log("Checking tinsoft key: START");
   const result = await axios.get(
     TINSOFT_URL + "getKeyInfo.php?key=" + Cnf.tinsoft_key
@@ -43,21 +46,26 @@ checkKey = async () => {
 
 initalBrowser = async () => {
   browser = await puppeteer.launch({
-    headless: process.env.IS_HEADLESS === "true",
-    executablePath: process.env.CHROME_PATH,
+    headless: Cnf.is_headless === "true",
+    executablePath: Cnf.chrome_path,
   });
   const context = await browser.createIncognitoBrowserContext();
   //   await context.overridePermissions(process.env.GAME_LINK, ["clipboard-read"]);
   page = await context.newPage();
+  const client = await page.target().createCDPSession();
+  // const { windowId } = await client.send("Browser.getWindowForTarget");
+  // await client.send("Browser.setWindowBounds", {
+  //   windowId,
+  //   bounds: { windowState: "minimized" },
+  // });
+  await client.send("Network.clearBrowserCookies");
+  await client.send("Network.clearBrowserCache");
 };
 
 initial = async () => {
   console.log("Initial START");
   console.log("Config:");
-  console.log({
-    key: Cnf.tinsoft_key,
-    sheetId: Cnf.google_sheet_id,
-  });
+  console.log(Cnf);
   try {
     const [data, , location, timeout] = await Promise.all([
       loadDoc(),
@@ -96,6 +104,9 @@ getRandomLocation = () => {
 };
 
 updateProxier = async (str) => {
+  if (!Cnf.use_proxy) {
+    return 0;
+  }
   let txtList = str.split(":");
   const host = txtList[0];
   const port = txtList[1];
@@ -125,15 +136,16 @@ updateProxier = async (str) => {
 };
 
 moveMouseRandomly = async () => {
-  await page.mouse.move(Math.random()*100, Math.random()*100);
-  await delay(500)
+  await page.mouse.move(Math.random() * 100, Math.random() * 100);
+  await delay(500);
   await page.mouse.down();
-  await page.mouse.move(Math.random()*100, Math.random()*100);
-  await delay(500)
+  await page.mouse.move(Math.random() * 100, Math.random() * 100);
+  await delay(500);
   await page.mouse.up();
 };
 
 updateProxy = async () => {
+  if (!Cnf.use_proxy) return 0;
   console.log("Updating Proxy START");
   const randomLocation = getRandomLocation() || 0;
   const result = await axios.get(
@@ -183,11 +195,9 @@ execLine = async (line) => {
   if (!resultCell.value) {
     await initalBrowser();
     for (let i = 0; i < 2; i++) {
+      if (resultCell.value) break;
       try {
-        await moveMouseRandomly()
-        const client = await page.target().createCDPSession();
-        await client.send("Network.clearBrowserCookies");
-        await client.send("Network.clearBrowserCache");
+        await moveMouseRandomly();
         await page.goto(Cnf.riot_login_link, {
           waitUntil: "networkidle2",
         });
@@ -211,7 +221,7 @@ execLine = async (line) => {
         await signInbutton.click();
 
         // Email
-        await moveMouseRandomly()
+        await moveMouseRandomly();
         await page.waitForSelector("input[name=email]");
         await page.$eval("input[name=newsletter]", (el) => el.click());
         await page.type("input[name=email]", line._rawData[0]);
@@ -227,7 +237,7 @@ execLine = async (line) => {
           bdate.getFullYear();
 
         // Birtday
-        await moveMouseRandomly()
+        await moveMouseRandomly();
         await page.type("input[name=date_of_birth_day]", text);
         nextButton = await page.$('button[title="Next"]');
         await nextButton.click();
@@ -240,7 +250,7 @@ execLine = async (line) => {
         // Password
         await page.type("input[name=password]", line._rawData[2]);
         await page.type("input[name=confirm_password]", line._rawData[2]);
-        await Promise.all([delay(1500),moveMouseRandomly()]);
+        await Promise.all([delay(1500), moveMouseRandomly()]);
         nextButton = await page.$('button[title="Next"]');
         await nextButton.click();
         try {
@@ -257,19 +267,25 @@ execLine = async (line) => {
           console.log(`FAIL DUE TO ${messageError}`);
           break;
         } catch (err) {
-          //https://account.riotgames.com/
           try {
-            await page.waitForNavigation("https://account.riotgames.com", {
-              timeout: 10000,
-            });
+            try {
+              await page.waitForNavigation("https://account.riotgames.com", {
+                timeout: 10000,
+              });
+            } catch (err) {
+              throw new Error("FAIL DUE TO REGISTER ERROR OR CAPCHA");
+            }
           } catch (err) {
-            console.log(`FAIL DUE TO REGISTER ERROR OR CAPCHA`);
+            console.log(err.toString());
             await browser.close();
             await initalBrowser();
             continue;
           }
+          //https://account.riotgames.com/
           console.log("Register DONE");
-          await delay(8000);
+          resultCell.value = "Register DONE";
+          await defaultSheet.saveUpdatedCells();
+          // await delay(2000);
           // insert RiotID + Tagline
           await page.type(
             'input[data-testid="riot-id__riotId"]',
@@ -293,7 +309,10 @@ execLine = async (line) => {
             console.log(`FAIL DUE TO ${toastValue}`);
             break;
           } catch (err) {
-            resultCell.value = `${new Date().toString()}`;
+            defaultSheet.getCell(
+              line.rowIndex - 1,
+              6
+            ).value = `${new Date().toString()}`;
             isSuccess = true;
             break;
           }
@@ -349,7 +368,7 @@ run = async () => {
           clearInterval(x);
         }
         timeout = await updateProxy();
-        count = 0
+        count = 0;
       }
     }
   }
