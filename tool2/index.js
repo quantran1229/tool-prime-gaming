@@ -91,7 +91,7 @@ execLine = async (line) => {
     "Line",
     line.rowIndex
   );
-  const resultCell = defaultSheet.getCell(line.rowIndex - 1, 6);
+  const resultCell = defaultSheet.getCell(line.rowIndex - 1, 3);
   if (!resultCell.value) {
     if (browser) await browser.close();
     await initalBrowser();
