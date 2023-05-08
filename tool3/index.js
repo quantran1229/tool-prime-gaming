@@ -14,16 +14,29 @@ puppeteer.use(pluginStealth());
 let browser;
 let page;
 let defaultSheet;
+let defaultSheetAmz;
 
-loadDoc = async () => {
-  console.log("Loading data from google sheet: START");
-  const doc = new GoogleSpreadsheet(Cnf.google_sheet_id);
+loadRIOTDoc = async () => {
+  console.log("Loading data from riot google sheet: START");
+  const doc = new GoogleSpreadsheet(Cnf.google_sheet_amz_id);
   await doc.useServiceAccountAuth(creds);
   await doc.loadInfo();
-  defaultSheet = doc.sheetsByIndex[parseInt(Cnf.google_sheet_index, 10)];
+  defaultSheet = doc.sheetsByIndex[parseInt(Cnf.google_sheet_riot_index, 10)];
   await defaultSheet.loadCells();
   const lines = await defaultSheet.getRows();
-  console.log("Loading data from google sheet: DONE");
+  console.log("Loading data from riot google sheet: DONE");
+  return lines;
+};
+
+loadAMZDoc = async () => {
+  console.log("Loading data from amz google sheet: START");
+  const doc = new GoogleSpreadsheet(Cnf.google_sheet_amz_id);
+  await doc.useServiceAccountAuth(creds);
+  await doc.loadInfo();
+  defaultSheetAmz = doc.sheetsByIndex[parseInt(Cnf.google_sheet_amz_index, 10)];
+  await defaultSheetAmz.loadCells();
+  const lines = await defaultSheetAmz.getRows();
+  console.log("Loading data from amz google sheet: DONE");
   return lines;
 };
 
@@ -45,13 +58,12 @@ initial = async () => {
   console.log("Config:");
   console.log(Cnf);
   try {
-    const [data, , location, timeout] = await Promise.all([
-      loadDoc(),
-      // initalBrowser(),
+    const [riotData, amzData] = await Promise.all([
+      loadRIOTDoc(),
+      loadAMZDoc(),
     ]);
-    proxyLocations = location;
     console.log("Initial DONE");
-    return [data, timeout];
+    return [riotData, amzData];
   } catch (err) {
     console.log("Initial fail due to :" + err.toString());
   }
@@ -84,34 +96,44 @@ getOTP = async (code2F) => {
   return null;
 };
 
-execLine = async (line) => {
+execLine = async (line, riotData) => {
   console.log(
     "START CHECKING ACCOUNT",
     line._rawData[0],
     "Line",
     line.rowIndex
   );
-  const resultCell = defaultSheet.getCell(line.rowIndex - 1, 3);
+  const riotLine = riotData.find((e) => e._rawData[0] == line._rawData[0]);
+  if (!riotLine) {
+    console.log("Not found account in riot!");
+    const s = defaultSheetAmz.getCell(line.rowIndex - 1, 4);
+    s.value = "Not found riot account";
+    await defaultSheetAmz.saveUpdatedCells();
+    return;
+  }
+  const resultCell = defaultSheet.getCell(riotLine.rowIndex - 1, 5);
   if (!resultCell.value) {
     for (let i = 0; i < 2; i++) {
       if (browser) await browser.close();
       await initalBrowser();
       if (resultCell.value) break;
       try {
-        await page.goto(Cnf.amz_signin_link, {
+        await page.goto(Cnf.amz_riot_link, {
           waitUntil: "networkidle2",
         });
         console.log("Sign in....");
+        await delay(5000);
+        await page.$eval(`button[data-a-target="sign-in-button"]`, (el) =>
+          el.click()
+        );
+        await page.waitForSelector("#ap_email");
         await page.type("#ap_email", line._rawData[0]);
-        await page.$eval("input[id=continue]", (el) => el.click());
-        await page.waitForSelector("input[id=ap_password]", { timeout: 5000 });
-        // password
         await page.type("#ap_password", line._rawData[1]);
         await page.$eval("input[id=signInSubmit]", (el) => el.click());
-        await page.waitForSelector("input[id=auth-mfa-otpcode]", {
-          timeout: 5000,
-        });
-        let otp = await getOTP(line._rawData[2]);
+        let [, otp] = await Promise.all([
+          page.waitForNavigation({ waitUntil: "networkidle2" }),
+          getOTP(line._rawData[2]),
+        ]);
         if (!otp) {
           resultCell.value = "Can't get OTP";
           break;
@@ -119,6 +141,7 @@ execLine = async (line) => {
         // OTP
         await page.type("#auth-mfa-otpcode", otp);
         await page.$eval("input[id=auth-signin-button]", (el) => el.click());
+        await delay(5000);
         try {
           await page.waitForSelector("a[id=ap-account-fixup-phone-skip-link]", {
             timeout: 5000,
@@ -127,13 +150,6 @@ execLine = async (line) => {
             el.click()
           );
         } catch (err) {}
-        await page.waitForSelector("input[id=twotabsearchtextbox]", {
-          timeout: 5000,
-        });
-        console.log('Sign in sucess!')
-        await page.goto(Cnf.amz_riot_link, {
-          waitUntil: "networkidle2",
-        });
 
         try {
           console.log("Try to activate");
@@ -145,75 +161,83 @@ execLine = async (line) => {
           );
           await page.click('button[data-a-target="activate-prime-button"]');
           console.log("Not activate prime! Activating!");
-          await page.waitForNavigation({ waitUntil: "networkidle2" , timeout: 60000});
+          await page.waitForNavigation({
+            waitUntil: "networkidle2",
+            timeout: 60000,
+          });
           console.log("Activated!");
         } catch (err) {
           console.log("Activated! Skip activating!");
         }
-        // Check user link or not
-        console.log("Checking riot is linked or not!")
+
         try {
+          console.log("Try to link account");
           await page.waitForSelector(
-            `p[data-a-target="Customer3PDisplayName"]`,
+            'button[data-a-target="LinkAccountButton"]',
             {
-              timeout: 5000,
+              timeout: 10000,
             }
           );
-          const linkedAccount = await page.$eval(
-            'p[data-a-target="Customer3PDisplayName"]',
-            (element) => element.textContent
+          await page.$eval('button[data-a-target="LinkAccountButton"]', (el) =>
+            el.click()
           );
-          console.log("Account is linked")
-          resultCell.value = 'Account Link '+linkedAccount
-          break;
+          await page.$eval('button[data-a-target="LinkAccountButton"]', (el) =>
+            el.remove()
+          );
+          await page.$eval('button[data-a-target="LinkAccountButton"]', (el) =>
+            el.click()
+          );
+          await page.waitForSelector('input[data-testid="input-username"]', {
+            timeout: 15000,
+          });
+          console.log("Sign in Riot...");
+          try {
+            await page.type(
+              'input[data-testid="input-username"]',
+              riotLine._rawData[3]
+            );
+            await page.type(
+              'input[data-testid="input-password"]',
+              riotLine._rawData[4]
+            );
+            await page.click(`button[title="Sign In"]`);
+            await page.waitForSelector('button[data-testid="consent-button"]', {
+              timeout: 10000,
+            });
+            console.log("Consenting...");
+            await page.click(`button[data-testid="consent-button"]`);
+            await page.waitForSelector(
+              'p[data-a-target="Customer3PDisplayName"]',
+              {
+                timeout: 20000,
+              }
+            );
+            const linkedAccount = await page.$eval(
+              'p[data-a-target="Customer3PDisplayName"]',
+              (element) => element.textContent
+            );
+            resultCell.value = linkedAccount;
+            console.log("Linked: ", linkedAccount);
+            break;
+          } catch (err) {
+            const [wrongRiotAccount] = await page.$x(
+              "//span[contains(text(), 'Your username or password may be incorrect')]"
+            );
+            if (wrongRiotAccount) {
+              resultCell.value = "Wrong riot account user/pass";
+              break;
+            }
+          }
         } catch (err) {
-          console.log("Account is new!")
-          resultCell.value = 'New'
-          break;
+          console.log(err);
         }
       } catch (err) {
-        const [wrongPassword] = await page.$x(
-          "//span[contains(text(), 'Your password is incorrect')]"
-        );
-        if (wrongPassword) {
-          resultCell.value = "Your password is incorrect";
-          break;
-        }
-        const [noEmailFoundErr] = await page.$x(
-          "//span[contains(text(), 'We cannot find an account with that email address')]"
-        );
-        if (noEmailFoundErr) {
-          resultCell.value =
-            "We cannot find an account with that email address";
-          break;
-        }
-        const [otpWrong] = await page.$x(
-          "//span[contains(text(), 'The One Time Password (OTP) you entered is not valid. Please try again.')]"
-        );
-        if (otpWrong) {
-          resultCell.value = "OTP is invalid";
-          break;
-        }
-        const [suspendAccount] = await page.$x(
-          "//h4[contains(text(), 'Account on hold temporarily')]"
-        );
-        if (suspendAccount) {
-          resultCell.value = "Account on hold temporarily";
-          break;
-        }
-        const [importantMess] = await page.$x(
-          "//h4[contains(text(), 'Important Message!')]"
-        );
-        if (importantMess) {
-          resultCell.value = "Important Message!";
-          break;
-        }
         console.log(err);
       }
     }
   }
   await defaultSheet.saveUpdatedCells();
-    if (browser) await browser.close();
+  if (browser) await browser.close();
 };
 
 done = async () => {
@@ -221,7 +245,7 @@ done = async () => {
     await browser.close();
   }
   console.log("SCRIPT EXIT!");
-    process.exit();
+  process.exit();
 };
 const clearLastLine = () => {
   process.stdout.moveCursor(0, -1); // up one line
@@ -229,10 +253,10 @@ const clearLastLine = () => {
 };
 
 run = async () => {
-  let [data] = await initial();
-  if (data) {
-    for (let line of data) {
-      await execLine(line);
+  let [riotData, amzData] = await initial();
+  if (riotData && amzData) {
+    for (let line of amzData) {
+      if (line._rawData[3] == Cnf.new_text) await execLine(line, riotData);
     }
   }
   done();
