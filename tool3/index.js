@@ -18,25 +18,13 @@ let defaultSheetAmz;
 
 loadRIOTDoc = async () => {
   console.log("Loading data from riot google sheet: START");
-  const doc = new GoogleSpreadsheet(Cnf.google_sheet_amz_id);
+  const doc = new GoogleSpreadsheet(Cnf.google_sheet_riot_id);
   await doc.useServiceAccountAuth(creds);
   await doc.loadInfo();
   defaultSheet = doc.sheetsByIndex[parseInt(Cnf.google_sheet_riot_index, 10)];
   await defaultSheet.loadCells();
   const lines = await defaultSheet.getRows();
   console.log("Loading data from riot google sheet: DONE");
-  return lines;
-};
-
-loadAMZDoc = async () => {
-  console.log("Loading data from amz google sheet: START");
-  const doc = new GoogleSpreadsheet(Cnf.google_sheet_amz_id);
-  await doc.useServiceAccountAuth(creds);
-  await doc.loadInfo();
-  defaultSheetAmz = doc.sheetsByIndex[parseInt(Cnf.google_sheet_amz_index, 10)];
-  await defaultSheetAmz.loadCells();
-  const lines = await defaultSheetAmz.getRows();
-  console.log("Loading data from amz google sheet: DONE");
   return lines;
 };
 
@@ -58,12 +46,11 @@ initial = async () => {
   console.log("Config:");
   console.log(Cnf);
   try {
-    const [riotData, amzData] = await Promise.all([
+    const [riotData] = await Promise.all([
       loadRIOTDoc(),
-      loadAMZDoc(),
     ]);
     console.log("Initial DONE");
-    return [riotData, amzData];
+    return [riotData];
   } catch (err) {
     console.log("Initial fail due to :" + err.toString());
   }
@@ -96,22 +83,14 @@ getOTP = async (code2F) => {
   return null;
 };
 
-execLine = async (line, riotData) => {
+execLine = async (line) => {
   console.log(
     "START CHECKING ACCOUNT",
     line._rawData[0],
     "Line",
     line.rowIndex
   );
-  const riotLine = riotData.find((e) => e._rawData[0] == line._rawData[0]);
-  if (!riotLine) {
-    console.log("Not found account in riot!");
-    const s = defaultSheetAmz.getCell(line.rowIndex - 1, 4);
-    s.value = "Not found riot account";
-    await defaultSheetAmz.saveUpdatedCells();
-    return;
-  }
-  const resultCell = defaultSheet.getCell(riotLine.rowIndex - 1, 5);
+  const resultCell = defaultSheet.getCell(line.rowIndex - 1, 5);
   if (!resultCell.value) {
     for (let i = 0; i < 2; i++) {
       if (browser) await browser.close();
@@ -122,7 +101,7 @@ execLine = async (line, riotData) => {
           waitUntil: "networkidle2",
         });
         console.log("Sign in....");
-        await delay(5000);
+        await delay(3000);
         await page.$eval(`button[data-a-target="sign-in-button"]`, (el) =>
           el.click()
         );
@@ -188,17 +167,17 @@ execLine = async (line, riotData) => {
             el.click()
           );
           await page.waitForSelector('input[data-testid="input-username"]', {
-            timeout: 15000,
+            timeout: 10000,
           });
           console.log("Sign in Riot...");
           try {
             await page.type(
               'input[data-testid="input-username"]',
-              riotLine._rawData[3]
+              line._rawData[3]
             );
             await page.type(
               'input[data-testid="input-password"]',
-              riotLine._rawData[4]
+              line._rawData[4]
             );
             await page.click(`button[title="Sign In"]`);
             await page.waitForSelector('button[data-testid="consent-button"]', {
@@ -218,7 +197,6 @@ execLine = async (line, riotData) => {
             );
             resultCell.value = linkedAccount;
             console.log("Linked: ", linkedAccount);
-            break;
           } catch (err) {
             const [wrongRiotAccount] = await page.$x(
               "//span[contains(text(), 'Your username or password may be incorrect')]"
@@ -231,6 +209,18 @@ execLine = async (line, riotData) => {
         } catch (err) {
           console.log(err);
         }
+        // Get in game-content
+        try {
+          await page.click(`button[data-a-target="buy-box_call-to-action"]`);
+          await page.waitForSelector('h1[data-a-target="header-state_JustClaimed"]', {
+            timeout: 10000
+          })
+          defaultSheet.getCell(line.rowIndex - 1, 6).value = 'COLLECTED'
+          console.log("DONE!")
+        } catch(err) {
+          console.log('Gift not found')
+        }
+        break;
       } catch (err) {
         console.log(err);
       }
@@ -253,10 +243,10 @@ const clearLastLine = () => {
 };
 
 run = async () => {
-  let [riotData, amzData] = await initial();
-  if (riotData && amzData) {
-    for (let line of amzData) {
-      if (line._rawData[3] == Cnf.new_text) await execLine(line, riotData);
+  let [riotData] = await initial();
+  if (riotData) {
+    for (let line of riotData) {
+      await execLine(line);
     }
   }
   done();
