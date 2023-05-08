@@ -29,7 +29,7 @@ loadDoc = async () => {
 
 initalBrowser = async () => {
   browser = await puppeteer.launch({
-    headless: Cnf.is_headless === "true",
+    headless: Cnf.is_headless,
     executablePath: Cnf.chrome_path,
   });
   const context = await browser.createIncognitoBrowserContext();
