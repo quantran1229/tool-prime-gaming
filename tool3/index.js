@@ -46,9 +46,7 @@ initial = async () => {
   console.log("Config:");
   console.log(Cnf);
   try {
-    const [riotData] = await Promise.all([
-      loadRIOTDoc(),
-    ]);
+    const [riotData] = await Promise.all([loadRIOTDoc()]);
     console.log("Initial DONE");
     return [riotData];
   } catch (err) {
@@ -130,24 +128,24 @@ execLine = async (line) => {
           );
         } catch (err) {}
 
-        try {
-          console.log("Try to activate");
-          await page.waitForSelector(
-            'button[data-a-target="activate-prime-button"]',
-            {
-              timeout: 5000,
-            }
-          );
-          await page.click('button[data-a-target="activate-prime-button"]');
-          console.log("Not activate prime! Activating!");
-          await page.waitForNavigation({
-            waitUntil: "networkidle2",
-            timeout: 60000,
-          });
-          console.log("Activated!");
-        } catch (err) {
-          console.log("Activated! Skip activating!");
-        }
+        // try {
+        //   console.log("Try to activate");
+        //   await page.waitForSelector(
+        //     'button[data-a-target="activate-prime-button"]',
+        //     {
+        //       timeout: 5000,
+        //     }
+        //   );
+        //   await page.click('button[data-a-target="activate-prime-button"]');
+        //   console.log("Not activate prime! Activating!");
+        //   await page.waitForNavigation({
+        //     waitUntil: "networkidle2",
+        //     timeout: 60000,
+        //   });
+        //   console.log("Activated!");
+        // } catch (err) {
+        //   console.log("Activated! Skip activating!");
+        // }
 
         try {
           console.log("Try to link account");
@@ -171,6 +169,17 @@ execLine = async (line) => {
           });
           console.log("Sign in Riot...");
           try {
+            try {
+              await page.waitForSelector(
+                "button.osano-cm-dialog__close.osano-cm-close",
+                { timeout: 5000 }
+              );
+              const closeButton = await page.$(
+                "button.osano-cm-dialog__close.osano-cm-close"
+              );
+              await closeButton.click();
+              await delay(1000);
+            } catch (err) {}
             await page.type(
               'input[data-testid="input-username"]',
               line._rawData[3]
@@ -212,13 +221,16 @@ execLine = async (line) => {
         // Get in game-content
         try {
           await page.click(`button[data-a-target="buy-box_call-to-action"]`);
-          await page.waitForSelector('h1[data-a-target="header-state_JustClaimed"]', {
-            timeout: 10000
-          })
-          defaultSheet.getCell(line.rowIndex - 1, 6).value = 'COLLECTED'
-          console.log("DONE!")
-        } catch(err) {
-          console.log('Gift not found')
+          await page.waitForSelector(
+            'h1[data-a-target="header-state_JustClaimed"]',
+            {
+              timeout: 10000,
+            }
+          );
+          defaultSheet.getCell(line.rowIndex - 1, 6).value = "COLLECTED";
+          console.log("DONE!");
+        } catch (err) {
+          console.log("Gift not found");
         }
         break;
       } catch (err) {

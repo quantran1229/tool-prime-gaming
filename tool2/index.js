@@ -94,6 +94,7 @@ execLine = async (line) => {
   const resultCell = defaultSheet.getCell(line.rowIndex - 1, 3);
   if (!resultCell.value) {
     for (let i = 0; i < 2; i++) {
+      let resultText = "";
       if (browser) await browser.close();
       await initalBrowser();
       if (resultCell.value) break;
@@ -130,28 +131,51 @@ execLine = async (line) => {
         await page.waitForSelector("input[id=twotabsearchtextbox]", {
           timeout: 5000,
         });
-        console.log('Sign in sucess!')
+        console.log("Sign in sucess!");
         await page.goto(Cnf.amz_riot_link, {
           waitUntil: "networkidle2",
         });
 
-        try {
-          console.log("Try to activate");
-          await page.waitForSelector(
-            'button[data-a-target="activate-prime-button"]',
-            {
-              timeout: 5000,
+        // Try Prime Or Active Prime
+        await Promise.all([
+          new Promise(async (res, rej) => {
+            try {
+              console.log("Check Try Prime...");
+              await page.waitForSelector(
+                'button[data-a-target="try-prime-button"]',
+                {
+                  timeout: 5000,
+                }
+              );
+              console.log("Try Prime found!");
+              resultText = "Try ";
+            } catch (err) {
+              console.log("Not try Prime!");
+            } finally {
+              res();
             }
-          );
-          await page.click('button[data-a-target="activate-prime-button"]');
-          console.log("Not activate prime! Activating!");
-          await page.waitForNavigation({ waitUntil: "networkidle2" , timeout: 60000});
-          console.log("Activated!");
-        } catch (err) {
-          console.log("Activated! Skip activating!");
-        }
+          }),
+          new Promise(async (res, rej) => {
+            try {
+              console.log("Check Activate Prime");
+              await page.waitForSelector(
+                'button[data-a-target="activate-prime-button"]',
+                {
+                  timeout: 5000,
+                }
+              );
+              console.log("Activate Prime found!");
+              resultText = "Activate ";
+            } catch (err) {
+              console.log("Not found Activate Prime");
+            } finally {
+              res();
+            }
+          }),
+        ]);
+
         // Check user link or not
-        console.log("Checking riot is linked or not!")
+        console.log("Checking riot is linked or not!");
         try {
           await page.waitForSelector(
             `p[data-a-target="Customer3PDisplayName"]`,
@@ -163,12 +187,12 @@ execLine = async (line) => {
             'p[data-a-target="Customer3PDisplayName"]',
             (element) => element.textContent
           );
-          console.log("Account is linked")
-          resultCell.value = 'Account Link '+linkedAccount
+          console.log("Account is linked");
+          resultCell.value = resultText + "Link " + linkedAccount;
           break;
         } catch (err) {
-          console.log("Account is new!")
-          resultCell.value = 'New'
+          console.log("Account is new!");
+          resultCell.value = resultText + "New";
           break;
         }
       } catch (err) {
@@ -213,7 +237,7 @@ execLine = async (line) => {
     }
   }
   await defaultSheet.saveUpdatedCells();
-    if (browser) await browser.close();
+  if (browser) await browser.close();
 };
 
 done = async () => {
@@ -221,7 +245,7 @@ done = async () => {
     await browser.close();
   }
   console.log("SCRIPT EXIT!");
-    process.exit();
+  process.exit();
 };
 const clearLastLine = () => {
   process.stdout.moveCursor(0, -1); // up one line
