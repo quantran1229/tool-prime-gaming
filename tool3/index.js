@@ -118,7 +118,7 @@ execLine = async (line) => {
         // OTP
         await page.type("#auth-mfa-otpcode", otp);
         await page.$eval("input[id=auth-signin-button]", (el) => el.click());
-        await delay(5000);
+        await delay(3000);
         try {
           await page.waitForSelector("a[id=ap-account-fixup-phone-skip-link]", {
             timeout: 5000,
@@ -171,11 +171,11 @@ execLine = async (line) => {
           try {
             try {
               await page.waitForSelector(
-                "button.osano-cm-dialog__close.osano-cm-close",
-                { timeout: 5000 }
+                'button[aria-label="Dismiss"]',
+                { timeout: 3000 }
               );
               const closeButton = await page.$(
-                "button.osano-cm-dialog__close.osano-cm-close"
+                'button[aria-label="Dismiss"]'
               );
               await closeButton.click();
               await delay(1000);
