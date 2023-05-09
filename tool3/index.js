@@ -231,6 +231,7 @@ execLine = async (line) => {
           console.log("DONE!");
         } catch (err) {
           console.log("Gift not found");
+          resultCell.value = 'Gift not found'
         }
         break;
       } catch (err) {
