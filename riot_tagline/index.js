@@ -55,6 +55,16 @@ initial = async () => {
   }
 };
 
+function delay(time) {
+  let x;
+  if (time > 30 * 1000) {
+    x = setInterval(() => {});
+  }
+  return new Promise(function (resolve) {
+    setTimeout(resolve, time);
+  });
+}
+
 execLine = async (line) => {
   console.log("START CHECKING ACCOUNT", line._rawData[0], "Line", line.rowInd);
   let statusLogin = defaultSheet.getCell(line.rowIndex - 1, 5);
@@ -81,23 +91,26 @@ execLine = async (line) => {
         // Login riot game
         await page.type('input[name="username"]', line._rawData[1]);
         await page.type('input[name="password"]', line._rawData[2]);
+        await delay(1000);
         const button = await page.$('button[data-testid="btn-signin-submit"]');
         await button.click();
-
+        await delay(3000);
         // check username or password is incorrect
         try {
-          await page.$(".status-message.text__web-error");
-          console.log("Cannot log in ...");
-          statusLogin.value = "Cannot log in ";
-          await defaultSheet.saveUpdatedCells();
-          await browser.close();
-          return;
+          const errorSpan = await page.$('span.status-message.text__web-error');
+          if (errorSpan) {
+            console.log("Cannot log in ...");
+            statusLogin.value = "Cannot log in ";
+            await defaultSheet.saveUpdatedCells();
+            await browser.close();
+            return;
+          }
         } catch (e) {
           console.log(e);
         }
-
+        
         await page.waitForNavigation({ waitUntil: "networkidle2" });
-        statusLogin.value = "Login successful";
+        statusLogin.value = "Login successfully";
         await defaultSheet.saveUpdatedCells();
 
         // edit riot_id
@@ -120,8 +133,16 @@ execLine = async (line) => {
           const saveChangesButton = await page.$(
             '[data-testid="riot-id__save-btn"]'
           );
-          await saveChangesButton.click();
-          statusEditTags.value = "Register DONE";
+          const isDisabled = await saveChangesButton.evaluate(
+            (button) => button.disabled
+          );
+          if (isDisabled) {
+            statusEditTags.value = "Can't edit tagline";
+          } else {
+            await saveChangesButton.click();
+            console.log("Register Tag DONE");
+            statusEditTags.value = "Register DONE";
+          }
         } catch (e) {
           statusEditTags.value = "Can't edit tagline";
         }
