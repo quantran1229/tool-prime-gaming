@@ -77,7 +77,7 @@ execLine = async (line) => {
 
   if (!statusEditTags.value) {
     for (let i = 0; i < 2; i++) {
-      // if (browser) await browser.close();
+      if (browser) await browser.close();
       await initalBrowser();
       if (statusEditTags.value) break;
 
@@ -106,7 +106,6 @@ execLine = async (line) => {
             return;
           }
         } catch (e) {
-          console.log(e);
         }
         
         await page.waitForNavigation({ waitUntil: "networkidle2" });
@@ -130,6 +129,7 @@ execLine = async (line) => {
         await inputTagline.type(line._rawData[4]);
 
         try {
+          console.log("Start editing tagline...");
           const saveChangesButton = await page.$(
             '[data-testid="riot-id__save-btn"]'
           );
@@ -137,12 +137,15 @@ execLine = async (line) => {
             (button) => button.disabled
           );
           if (isDisabled) {
+            console.log("Can't edit tagline");
             statusEditTags.value = "Can't edit tagline";
           } else {
             await saveChangesButton.click();
             console.log("Register Tag DONE");
             statusEditTags.value = "Register DONE";
           }
+          console.log("End editing tagline...");
+
         } catch (e) {
           statusEditTags.value = "Can't edit tagline";
         }
