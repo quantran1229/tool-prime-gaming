@@ -1,0 +1,15 @@
+{
+    "google_sheet_id":"1_sOUrYTWH-wb0tEy5JpK6LCyJ0sAcnnM-BPAIGp7PZc",
+    "google_sheet_index": 8,
+    "tinsoft_key":"TL3MwjLIF16TeFRzTZW2HPom0AmS2Fc2CFZ1LO",
+    "amz_signin_link":"https://www.amazon.com/ap/signin?openid.pape.max_auth_age=0&openid.return_to=https%3A%2F%2Fwww.amazon.com%2F%3Fref_%3Dnav_custrec_signin&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=usflex&openid.mode=checkid_setup&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&",
+    "2fa_link":"https://www.amazon.com/a/settings/approval?appActionToken=",
+    "card_link":"https://www.amazon.com/cpe/yourpayments/settings/manageoneclick?ref_=v1c_title",
+    "address_link":"https://www.amazon.com/a/addresses?ref_=ya_d_c_addr",
+    "proxier_path": "C:\\Users\\downy\\AppData\\Roaming\\Proxifier\\Profiles",
+    "no_account_per_proxy":1,
+    "no_card_changed":3,
+    "use_proxy": false,
+    "is_headless": false,
+    "chrome_path":"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+}
