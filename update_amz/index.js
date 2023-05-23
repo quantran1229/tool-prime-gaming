@@ -402,7 +402,7 @@ execLine = async (line) => {
               year: line._rawData[23],
             },
           ];
-          for (let cardId = 0; cardId < Cnf.no_card_changed; cardId++) {
+          for (let cardId = creditCardAdded; cardId < Cnf.no_card_changed; cardId++) {
             console.log("Adding card", cardId, cardsList[cardId].id);
             try {
               await page.goto(Cnf.card_link, {
@@ -553,6 +553,7 @@ execLine = async (line) => {
         console.log(err);
       }
     }
+    count = count >= Cnf.no_account_per_proxy ? -1 : count + 1;
   }
   await defaultSheet.saveUpdatedCells();
   if (browser) await browser.close();
@@ -576,6 +577,7 @@ run = async () => {
   if (data) {
     for (let line of data) {
       await execLine(line);
+      console.log("Checking to change proxy")
       if (count == -1) {
         if (Date.now() < timeout) {
           console.log(
