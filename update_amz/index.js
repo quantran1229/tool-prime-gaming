@@ -163,7 +163,7 @@ updateProxy = async () => {
     } else {
       console.log("Error when update Proxy: " + result.data.description);
     }
-    await delay(20 * 1000)
+    await delay(60 * 1000)
   }
   throw new Error("Error when update Proxy after 3 times. Exist script!");
 };
