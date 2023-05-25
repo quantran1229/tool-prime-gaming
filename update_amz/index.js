@@ -138,7 +138,7 @@ moveMouseRandomly = async () => {
 updateProxy = async () => {
   if (!Cnf.use_proxy) return 0;
   console.log("Updating Proxy START");
-  const randomLocation = getRandomLocation() || 0;
+  const randomLocation = 0;
   const result = await axios.get(
     TINSOFT_URL +
       "changeProxy.php?key=" +
