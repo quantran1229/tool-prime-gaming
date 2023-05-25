@@ -136,32 +136,36 @@ moveMouseRandomly = async () => {
 };
 
 updateProxy = async () => {
-  if (!Cnf.use_proxy) return 0;
-  console.log("Updating Proxy START");
-  const randomLocation = 0;
-  const result = await axios.get(
-    TINSOFT_URL +
-      "changeProxy.php?key=" +
-      Cnf.tinsoft_key +
-      "&location=" +
-      randomLocation
-  );
-
-  if (result.data.success) {
-    console.log(
-      "NEW proxy :",
-      result.data.proxy,
-      " in ",
-      proxyLocations[randomLocation]?.name
+  for (let i = 0; i < 3; i++) {
+    if (!Cnf.use_proxy) return 0;
+    console.log("Updating Proxy START");
+    const randomLocation = 0;
+    const result = await axios.get(
+      TINSOFT_URL +
+        "changeProxy.php?key=" +
+        Cnf.tinsoft_key +
+        "&location=" +
+        randomLocation
     );
-    const timeout = Date.now() + result.data.next_change * 1000;
-    currentLocation = randomLocation;
-    await updateProxier(result.data.proxy);
-    await delay(5000);
-    return timeout;
-  } else {
-    throw new Error("Error when update Proxy: " + result.data.description);
+
+    if (result.data.success) {
+      console.log(
+        "NEW proxy :",
+        result.data.proxy,
+        " in ",
+        proxyLocations[randomLocation]?.name
+      );
+      const timeout = Date.now() + result.data.next_change * 1000;
+      currentLocation = randomLocation;
+      await updateProxier(result.data.proxy);
+      await delay(5000);
+      return timeout;
+    } else {
+      console.log("Error when update Proxy: " + result.data.description);
+    }
+    await delay(20 * 1000)
   }
+  throw new Error("Error when update Proxy after 3 times. Exist script!");
 };
 function delay(time) {
   let x;
@@ -195,8 +199,16 @@ execLine = async (line) => {
   )
     ? defaultSheet.getCell(line.rowIndex - 1, 26).value * 1
     : 0;
-  console.log("Has add address?",hasAddAddress, "Number of credit cards added:",creditCardAdded);
-  if (!resultCell.value && !(hasAddAddress && creditCardAdded == Cnf.no_card_changed)) {
+  console.log(
+    "Has add address?",
+    hasAddAddress,
+    "Number of credit cards added:",
+    creditCardAdded
+  );
+  if (
+    !resultCell.value &&
+    !(hasAddAddress && creditCardAdded == Cnf.no_card_changed)
+  ) {
     for (let i = 0; i < 2; i++) {
       if (browser) await browser.close();
       await initalBrowser();
@@ -251,32 +263,38 @@ execLine = async (line) => {
               }
             );
             await delay(2000);
-            await Promise.all([page.evaluate(
-              () =>
-                (document.getElementById(
-                  "address-ui-widgets-enterAddressFullName"
-                ).value = "")
-            ),page.evaluate(
-              () =>
-                (document.getElementById(
-                  "address-ui-widgets-enterAddressLine1"
-                ).value = "")
-            ), page.evaluate(
-              () =>
-                (document.getElementById(
-                  "address-ui-widgets-enterAddressCity"
-                ).value = "")
-            ), page.evaluate(
-              () =>
-                (document.getElementById(
-                  "address-ui-widgets-enterAddressPostalCode"
-                ).value = "")
-            ), page.evaluate(
-              () =>
-                (document.getElementById(
-                  "address-ui-widgets-enterAddressPhoneNumber"
-                ).value = "")
-            ) ]);
+            await Promise.all([
+              page.evaluate(
+                () =>
+                  (document.getElementById(
+                    "address-ui-widgets-enterAddressFullName"
+                  ).value = "")
+              ),
+              page.evaluate(
+                () =>
+                  (document.getElementById(
+                    "address-ui-widgets-enterAddressLine1"
+                  ).value = "")
+              ),
+              page.evaluate(
+                () =>
+                  (document.getElementById(
+                    "address-ui-widgets-enterAddressCity"
+                  ).value = "")
+              ),
+              page.evaluate(
+                () =>
+                  (document.getElementById(
+                    "address-ui-widgets-enterAddressPostalCode"
+                  ).value = "")
+              ),
+              page.evaluate(
+                () =>
+                  (document.getElementById(
+                    "address-ui-widgets-enterAddressPhoneNumber"
+                  ).value = "")
+              ),
+            ]);
             await page.type(
               'input[id="address-ui-widgets-enterAddressFullName"]',
               line._rawData[8]
@@ -326,17 +344,23 @@ execLine = async (line) => {
               'span[id="address-ui-widgets-form-submit-button-announce"]'
             );
             try {
-              await page.waitForSelector('span[id="address-ui-widgets-form-submit-button-announce"]',{
-                timeout:3000
-              })
+              await page.waitForSelector(
+                'span[id="address-ui-widgets-form-submit-button-announce"]',
+                {
+                  timeout: 3000,
+                }
+              );
               await page.click(
                 'span[id="address-ui-widgets-form-submit-button-announce"]'
               );
             } catch (err) {}
             try {
-              await page.waitForSelector('input[name="address-ui-widgets-saveOriginalOrSuggestedAddress"]',{
-                timeout:3000
-              })
+              await page.waitForSelector(
+                'input[name="address-ui-widgets-saveOriginalOrSuggestedAddress"]',
+                {
+                  timeout: 3000,
+                }
+              );
               await page.click(
                 'input[name="address-ui-widgets-saveOriginalOrSuggestedAddress"]'
               );
@@ -344,25 +368,27 @@ execLine = async (line) => {
             for (let x = 0; x < 3; x++) {
               try {
                 await delay(3000);
-                const [doneChangeAddress,submittedChangeAddress] = await Promise.all([page.$x(
-                  "//h4[contains(text(), 'Address saved')]"
-                ),page.$x(
-                  "//h4[contains(text(), 'submitted an address that is already in your address book')]"
-                )])
-                
+                const [doneChangeAddress, submittedChangeAddress] =
+                  await Promise.all([
+                    page.$x("//h4[contains(text(), 'Address saved')]"),
+                    page.$x(
+                      "//h4[contains(text(), 'submitted an address that is already in your address book')]"
+                    ),
+                  ]);
+
                 if (doneChangeAddress || submittedChangeAddress) {
                   const resultChangeAddress = defaultSheet.getCell(
                     line.rowIndex - 1,
                     25
                   );
-                  console.log("Success change address!")
+                  console.log("Success change address!");
                   resultChangeAddress.value = "ok";
                   hasAddAddress = true;
                   await defaultSheet.saveUpdatedCells();
                   break;
                 }
               } catch (err) {
-                console.log(err)
+                console.log(err);
               }
             }
           } catch (err) {
@@ -402,7 +428,11 @@ execLine = async (line) => {
               year: line._rawData[23],
             },
           ];
-          for (let cardId = creditCardAdded; cardId < Cnf.no_card_changed; cardId++) {
+          for (
+            let cardId = creditCardAdded;
+            cardId < Cnf.no_card_changed;
+            cardId++
+          ) {
             console.log("Adding card", cardId, cardsList[cardId].id);
             try {
               await page.goto(Cnf.card_link, {
@@ -438,16 +468,19 @@ execLine = async (line) => {
                 )
               )[0].split("-")[1];
               await delay(3000);
-              let numIFrame = 40
-              for (numIFrame; numIFrame < 50; numIFrame ++) {
+              let numIFrame = 40;
+              for (numIFrame; numIFrame < 50; numIFrame++) {
                 try {
-                  console.log("Looking for iFrame ...",numIFrame)
-                  await page.waitForSelector(`iframe[name="ApxSecureIframe-pp-${idName}-${numIFrame}"]`, {
-                    timeout: 2000
-                  });
+                  console.log("Looking for iFrame ...", numIFrame);
+                  await page.waitForSelector(
+                    `iframe[name="ApxSecureIframe-pp-${idName}-${numIFrame}"]`,
+                    {
+                      timeout: 2000,
+                    }
+                  );
                   break;
                 } catch (err) {
-                  clearLastLine()
+                  clearLastLine();
                 }
               }
               const elementHandle = await page.$(
@@ -455,7 +488,7 @@ execLine = async (line) => {
               );
               const frame = await elementHandle.contentFrame();
               await frame.waitForSelector(
-                'input[name="ppw-accountHolderName"]',
+                'input[name="ppw-accountHolderName"]'
               );
               await frame.type(
                 'input[name="ppw-accountHolderName"]',
@@ -465,7 +498,7 @@ execLine = async (line) => {
                 'input[name="addCreditCardNumber"]',
                 cardsList[cardId].id
               );
-              await delay(2000)
+              await delay(2000);
               await frame.select(
                 'select[name="ppw-expirationDate_month"]',
                 cardsList[cardId].month * 1 + ""
@@ -477,11 +510,16 @@ execLine = async (line) => {
               await frame.click(
                 'input[name="ppw-widgetEvent:AddCreditCardEvent"]'
               );
-              await frame.waitForSelector('input[name="ppw-widgetEvent:SelectAddressEvent"]',{
-                timeout: 5000
-              })
+              await frame.waitForSelector(
+                'input[name="ppw-widgetEvent:SelectAddressEvent"]',
+                {
+                  timeout: 5000,
+                }
+              );
               try {
-                await frame.click('input[name="ppw-widgetEvent:SelectAddressEvent"]')
+                await frame.click(
+                  'input[name="ppw-widgetEvent:SelectAddressEvent"]'
+                );
               } catch (err) {}
               await page.waitForSelector(
                 "#apx-add-credit-card-action-test-id",
@@ -489,8 +527,8 @@ execLine = async (line) => {
                   timeout: 10000,
                 }
               );
-              console.log("Adding card", cardId, "success")
-              creditCardAdded++
+              console.log("Adding card", cardId, "success");
+              creditCardAdded++;
             } catch (err) {
               console.log("Error when add card id = ", cardId, err);
               break;
@@ -509,7 +547,7 @@ execLine = async (line) => {
           console.log("Skip adding card");
         }
         if (hasAddAddress && creditCardAdded == Cnf.no_card_changed) {
-          console.log("Done change info!")
+          console.log("Done change info!");
           resultCell.value = "Done";
           break;
         }
@@ -577,7 +615,7 @@ run = async () => {
   if (data) {
     for (let line of data) {
       await execLine(line);
-      console.log("Checking to change proxy")
+      console.log("Checking to change proxy");
       if (count == -1) {
         if (Date.now() < timeout) {
           console.log(
