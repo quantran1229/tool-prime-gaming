@@ -253,7 +253,6 @@ execLine = async (line) => {
       // try prime/active
       await Promise.all([
         new Promise(async (res, rej) => {
-
           try {
             console.log("Check Try Prime...");
             await page.waitForSelector(
@@ -289,21 +288,29 @@ execLine = async (line) => {
               if (freeButton) {
                 await freeButton.click();
               } else {
-                resultCell.value = "Sign up error"
+                resultText = "Sign up error";
                 throw new Error("Not found any button");
               }
             }
             try {
               await page.waitForSelector(`a[id="a-autoid-0-announce"]`, {
-                timeout: 5000
-              })
-              resultCell.value = "Sign up error"
-              throw new Error("Sign up error")
+                timeout: 5000,
+              });
+              resultText = "Sign up error";
+              throw new Error("Sign up error");
             } catch (err) {}
-            for (let t = Cnf.waiting_trial_time; t >0; t--) {
+            resultText = "Sign up error";
+            const [signUpError] = await page.$x(
+              "//h4[contains(text(), 'Sign up problem')]"
+            );
+            if (signUpError) {
+              resultText = "Sign up error";
+              throw new Error("Sign up error");
+            }
+            for (let t = Cnf.waiting_trial_time; t > 0; t--) {
               console.log(`Trying prime... waiting ${t}s`);
-              await delay(1000)
-              clearLastLine()
+              await delay(1000);
+              clearLastLine();
             }
             await page.goto(Cnf.gaming_link, {
               waitUntil: "networkidle2",
@@ -323,23 +330,23 @@ execLine = async (line) => {
               resultText = "acti";
             } catch (err) {}
             if (!checkActive)
-            try {
-              console.log("Check Try Prime");
-              await page.waitForSelector(
-                'button[data-a-target="try-prime-button"]',
-                {
-                  timeout: 5000,
-                }
-              );
-              console.log("Try Prime found!");
-              checkPrime = true;
-              resultText = "try";
-            } catch (err) {}
+              try {
+                console.log("Check Try Prime");
+                await page.waitForSelector(
+                  'button[data-a-target="try-prime-button"]',
+                  {
+                    timeout: 5000,
+                  }
+                );
+                console.log("Try Prime found!");
+                checkPrime = true;
+                resultText = "Sign up error";
+              } catch (err) {}
             if (!(checkPrime || checkActive)) {
               resultText = "ok";
             }
           } catch (err) {
-            console.log(err)
+            console.log(err);
           } finally {
             res();
           }
@@ -411,10 +418,12 @@ execLine = async (line) => {
         resultCell.value = "Hold";
         break;
       }
+      if (resultText) resultCell.value = resultText;
       console.log(err);
     }
   }
   count = count >= Cnf.no_account_per_proxy ? -1 : count + 1;
+  if (resultText) resultCell.value = resultText;
   await defaultSheet.saveUpdatedCells();
   if (browser) await browser.close();
 };
