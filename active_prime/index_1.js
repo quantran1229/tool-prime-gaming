@@ -297,9 +297,10 @@ execLine = async (line) => {
                 timeout: 5000,
               });
               resultText = "Sign up error";
-              throw new Error("Sign up error");
-            } catch (err) {}
-            resultText = "Sign up error";
+            } catch (err) {
+            }
+            if (resultText == "Sign up error") throw new Error("Sign up error")
+            await delay(8000)
             const [signUpError] = await page.$x(
               "//h4[contains(text(), 'Sign up problem')]"
             );
