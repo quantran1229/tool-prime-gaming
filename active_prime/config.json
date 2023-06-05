@@ -1,6 +1,6 @@
 {
     "google_sheet_id":"1_sOUrYTWH-wb0tEy5JpK6LCyJ0sAcnnM-BPAIGp7PZc",
-    "google_sheet_index": 9,
+    "google_sheet_index": 10,
     "tinsoft_key":"TLOeAybvlj8LzIl8GchhR2R83Gz80UJ3hsTEqG",
     "login_link":"https://www.amazon.com/ap/signin?openid.pape.max_auth_age=3600&openid.return_to=https%3A%2F%2Fgaming.amazon.com%2Fprime%2Fusamazonlogin%2Fxd%3Fconfirm%3DALWAYS%26returnUri%3Dhttps%253A%252F%252Famazon.com%252Fap%252Fsignin%253Fopenid.pape.max_auth_age%253D3600%2526openid.return_to%253Dhttps%25253A%25252F%25252Fgaming.amazon.com%25252Fhome%25253FsignedIn%25253Dtrue%2526openid.identity%253Dhttp%25253A%25252F%25252Fspecs.openid.net%25252Fauth%25252F2.0%25252Fidentifier_select%2526openid.assoc_handle%253Damzn_respawn_desktop_us%2526openid.mode%253Dcheckid_setup%2526openid.claimed_id%253Dhttp%25253A%25252F%25252Fspecs.openid.net%25252Fauth%25252F2.0%25252Fidentifier_select%2526openid.ns%253Dhttp%25253A%25252F%25252Fspecs.openid.net%25252Fauth%25252F2.0&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=amzn_respawn_desktop_us&openid.mode=checkid_setup&language=en_US&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&pageId=amzn_gaming_prime&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&ssoResponse=eyJ6aXAiOiJERUYiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiQTI1NktXIn0.ej-zYuUx3l2EZ0ajvcVgYJ13San-1tkYPtKbRrL7prk5mdNoxlz0ng.PVQuULUMcG9Y2dhM.WZ6qmSnz1PwmZy7-K7aAzYjkEknguRtqNpnX3wOt4AF1AF_jqs8ALUpQI0PY6DscQ6fmQM9GzmyKDcC3Og4ehR3mxA6onhWCaSTbKhIDNQcgIlQjYMHCHFt8lVlq9optPvKi3ih9iKD4OAYiVnsYvvJ8TtrdQXtuVQqD4uVhwSBJCerASIOYXHp5pv1NfG0kGI7Lmh7JtyU.8FAdA8A1bdcoG55SdA4AyA",
     "gaming_link": "https://gaming.amazon.com/home",
@@ -9,6 +9,7 @@
     "no_card_changed":3,
     "use_proxy": false,
     "is_headless": false,
-    "waiting_trial_time": 100,
-    "chrome_path":"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+    "waiting_trial_time": 30,
+    "chrome_path":"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "card_change_url": "https://www.amazon.com/mc/editPaymentPreference?ref"
 }
