@@ -253,7 +253,6 @@ execLine = async (line) => {
       // try prime/active
       await Promise.all([
         new Promise(async (res, rej) => {
-
           try {
             console.log("Check Try Prime...");
             await page.waitForSelector(
@@ -283,7 +282,7 @@ execLine = async (line) => {
               timeout: 5000,
             });
             for (let n = 62; n < 122; n++) {
-              console.log("Choosing card...",n,"not stuck")
+              console.log("Choosing card...", n, "not stuck");
               let idName = (
                 await page.$$eval(`input[name="ppw-widgetState"]`, (el) =>
                   el.map((x) => x.getAttribute("data-pmts-component-id"))
@@ -291,20 +290,18 @@ execLine = async (line) => {
               )[0].split("-")[1];
               await moveMouseRandomly();
 
-
               try {
-
-                await page.waitForSelector(`span[id="pp-${idName}-${n}"]`,{
-                  timeout: 500
-                })
+                await page.waitForSelector(`span[id="pp-${idName}-${n}"]`, {
+                  timeout: 500,
+                });
                 await page.click(`span[id="pp-${idName}-${n}"]`);
                 n = n + 9;
               } catch (err) {
                 if (n == 121) {
-                  resultCell.value = "Sign up error"
-                  throw new Error("No more cards to pick")
+                  resultCell.value = "Sign up error";
+                  throw new Error("No more cards to pick");
                 }
-                clearLastLine()
+                clearLastLine();
                 continue;
               }
               await page.click('input[name="Continue"]');
@@ -343,15 +340,15 @@ execLine = async (line) => {
             }
             try {
               await page.waitForSelector(`a[id="a-autoid-0-announce"]`, {
-                timeout: 5000
-              })
-              resultCell.value = "Sign up error"
-              throw new Error("Sign up error")
+                timeout: 5000,
+              });
+              resultCell.value = "Sign up error";
+              throw new Error("Sign up error");
             } catch (err) {}
-            for (let t = Cnf.waiting_trial_time; t >0; t--) {
+            for (let t = Cnf.waiting_trial_time; t > 0; t--) {
               console.log(`Trying prime... waiting ${t}s`);
-              await delay(1000)
-              clearLastLine()
+              await delay(1000);
+              clearLastLine();
             }
             await page.goto(Cnf.gaming_link, {
               waitUntil: "networkidle2",
@@ -369,20 +366,92 @@ execLine = async (line) => {
               console.log("Activate Prime found!");
               checkActive = true;
               resultText = "acti";
+              let now = 50;
+              for (let re = 0; re < 10; re++) {
+                await page.goto(Cnf.card_change_url, {
+                  waitUntil: "networkidle2",
+                });
+                let idName = (
+                  await page.$$eval(`input[name="ppw-widgetState"]`, (el) =>
+                    el.map((x) => x.getAttribute("data-pmts-component-id"))
+                  )
+                )[0].split("-")[1];
+                let foundInput = false;
+                for (let i = now; i < 130; i++) {
+                  try {
+                    let el = await page.$eval(
+                      `input[id=pp-${idName}-${i}]`,
+                      (e) => {
+                        return (
+                          e.type.toLowerCase() === "radio" &&
+                          e.title.toLowerCase() !=
+                            "use your gift card balance when available"
+                        );
+                      }
+                    );
+                    if (el) {
+                      await page.$eval(
+                        `input[id=pp-${idName}-${i}]`,
+                        (check) => (check.checked = true)
+                      );
+                      now = i + 10;
+                      foundInput = true;
+                      break;
+                    }
+                  } catch (err) {
+                    continue;
+                  }
+                }
+                if (!foundInput) {
+                  console.log("No more card found");
+                  break;
+                }
+                await page.click(
+                  'input[name="ppw-widgetEvent:PreferencePaymentOptionSelectionEvent"]'
+                );
+                await delay(7000);
+                await page.goto(Cnf.gaming_link, {
+                  waitUntil: "networkidle2",
+                });
+                await page.click(
+                  'button[data-a-target="activate-prime-button"]'
+                );
+                for (let t = Cnf.waiting_trial_time; t > 0; t--) {
+                  console.log(`Activating prime... waiting ${t}s`);
+                  await delay(1000);
+                  clearLastLine();
+                }
+                await page.goto(Cnf.gaming_link, {
+                  waitUntil: "networkidle2",
+                });
+                try {
+                  await page.waitForSelector(
+                    'button[data-a-target="activate-prime-button"]',
+                    {
+                      timeout: 5000,
+                    }
+                  );
+                  console.log("Activate Prime found! retry with new card");
+                } catch (err) {
+                  console.log("No prime found => success");
+                  resultText = "ok";
+                  break;
+                }
+              }
             } catch (err) {}
             if (!checkActive)
-            try {
-              console.log("Check Try Prime");
-              await page.waitForSelector(
-                'button[data-a-target="try-prime-button"]',
-                {
-                  timeout: 5000,
-                }
-              );
-              console.log("Try Prime found!");
-              checkPrime = true;
-              resultText = "try";
-            } catch (err) {}
+              try {
+                console.log("Check Try Prime");
+                await page.waitForSelector(
+                  'button[data-a-target="try-prime-button"]',
+                  {
+                    timeout: 5000,
+                  }
+                );
+                console.log("Try Prime found!");
+                checkPrime = true;
+                resultText = "try";
+              } catch (err) {}
             if (!(checkPrime || checkActive)) {
               resultText = "ok";
             }
@@ -403,6 +472,76 @@ execLine = async (line) => {
             console.log("Activate Prime found!");
             isActiveFound = true;
             resultText = "acti";
+            let now = 50;
+            for (let re = 0; re < 10; re++) {
+              await page.goto(Cnf.card_change_url, {
+                waitUntil: "networkidle2",
+              });
+              let idName = (
+                await page.$$eval(`input[name="ppw-widgetState"]`, (el) =>
+                  el.map((x) => x.getAttribute("data-pmts-component-id"))
+                )
+              )[0].split("-")[1];
+              let foundInput = false;
+              for (let i = now; i < 130; i++) {
+                try {
+                  let el = await page.$eval(
+                    `input[id=pp-${idName}-${i}]`,
+                    (e) => {
+                      return (
+                        e.type.toLowerCase() === "radio" &&
+                        e.title.toLowerCase() !=
+                          "use your gift card balance when available"
+                      );
+                    }
+                  );
+                  if (el) {
+                    await page.$eval(
+                      `input[id=pp-${idName}-${i}]`,
+                      (check) => (check.checked = true)
+                    );
+                    now = i + 10;
+                    foundInput = true;
+                    break;
+                  }
+                } catch (err) {
+                  continue;
+                }
+              }
+              if (!foundInput) {
+                console.log("No more card found");
+                break;
+              }
+              await page.click(
+                'input[name="ppw-widgetEvent:PreferencePaymentOptionSelectionEvent"]'
+              );
+              await delay(7000);
+              await page.goto(Cnf.gaming_link, {
+                waitUntil: "networkidle2",
+              });
+              await page.click('button[data-a-target="activate-prime-button"]');
+              for (let t = Cnf.waiting_trial_time; t > 0; t--) {
+                console.log(`Activating prime... waiting ${t}s`);
+                await delay(1000);
+                clearLastLine();
+              }
+              await page.goto(Cnf.gaming_link, {
+                waitUntil: "networkidle2",
+              });
+              try {
+                await page.waitForSelector(
+                  'button[data-a-target="activate-prime-button"]',
+                  {
+                    timeout: 5000,
+                  }
+                );
+                console.log("Activate Prime found! retry with new card");
+              } catch (err) {
+                console.log("No prime found => success");
+                resultText = "ok";
+                break;
+              }
+            }
           } catch (err) {
             console.log("Not found Activate Prime");
           } finally {
