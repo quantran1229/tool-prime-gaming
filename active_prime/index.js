@@ -599,8 +599,8 @@ execLine = async (line) => {
       }
       console.log(err);
     }
+    count = count >= Cnf.no_account_per_proxy ? -1 : count + 1;
   }
-  count = count >= Cnf.no_account_per_proxy ? -1 : count + 1;
   await defaultSheet.saveUpdatedCells();
   if (browser) await browser.close();
 };
